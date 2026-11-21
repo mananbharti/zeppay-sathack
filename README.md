@@ -17,7 +17,7 @@
 | [`zeppay-pwa/`](zeppay-pwa) | iPhone web app (React, Vite, offline PWA) | [README](zeppay-pwa/README.md) |
 | [`gh-pages-root/`](gh-pages-root) | Static extras published with the website (Zep Card profile page) | |
 
-Both apps share one identity, "Aurora Signal", and one rule set: never capture the UPI PIN; show *Paid* only when the bank's reply (Android) or the user (iPhone) confirms it; never auto-retry an uncertain payment.
+The Android app uses the "Blue Current" design ([android-app/docs/DESIGN.md](android-app/docs/DESIGN.md)); the iPhone app still uses "Aurora Signal". Both share one rule set: never capture the UPI PIN; show *Paid* only when the bank's reply (Android) or the user (iPhone) confirms it; never auto-retry an uncertain payment.
 
 The earlier Flutter app was removed in favour of these two. It's in git history, and its old releases stay downloadable.
 
