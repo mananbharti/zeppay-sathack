@@ -77,61 +77,66 @@ fun PayTab(vm: ZepViewModel) {
     val c = Zep.c
     val history by vm.history.collectAsState()
     val update by Updater.state.collectAsState()
+    val profile by vm.profile.collectAsState()
+    val photo by vm.photo.collectAsState()
     val helper = helperOn()
     val route = vm.route(helper)
     val carrier = vm.carrier()
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 18.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("zeppay", style = ZType.hero.copy(fontSize = 34.sp), color = c.text, modifier = Modifier.weight(1f))
-            Row(Modifier.clip(Shapes.pill).background(c.secondary).pressable(label = "SIM and route settings") { vm.go(Screen.Settings) }.padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(9.dp).clip(CircleShape).background(if (route == Route.IVR) c.unsure else c.paid))
-                Spacer(Modifier.width(8.dp))
-                Text("${carrier.label} · ${if (route == Route.IVR) "123PAY" else "*99#"}", style = ZType.bodyBold.copy(fontSize = 16.sp), color = c.onSecondary)
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Hero: blue band, header row, and the scan card.
+        Box(Modifier.fillMaxWidth()) {
+            HeroBand()
+            Column(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 26.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(58.dp).clip(CircleShape).pressable(label = "Your profile") { vm.go(Screen.Profile()) }, contentAlignment = Alignment.Center) {
+                        Avatar(profile.name, 48.dp, photo)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text("zeppay", style = ZType.hero.copy(fontSize = 30.sp), color = c.text, modifier = Modifier.weight(1f))
+                    Row(Modifier.heightIn(min = 48.dp).clip(Shapes.pill).background(c.secondary).pressable(label = "SIM and route settings") { vm.go(Screen.Settings) }.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(9.dp).clip(CircleShape).background(if (route == Route.IVR) c.unsure else c.paid))
+                        Spacer(Modifier.width(8.dp))
+                        Text("${carrier.label} · ${if (route == Route.IVR) "123PAY" else "*99#"}", style = ZType.bodyBold.copy(fontSize = 16.sp), color = c.onSecondary)
+                    }
+                }
+                Spacer(Modifier.height(26.dp))
+                ScanCard("Scan to pay", "Any UPI QR. No internet needed.", { vm.go(Screen.Scan) })
             }
         }
-        // Hero: the signal dial, with the aurora behind it. Tap to scan.
-        Box(Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
-            Aurora()
-            SignalDial(size = 224.dp, onClick = { vm.go(Screen.Scan) }, label = "Scan a QR to pay") {
-                Icon(ZIcon.Scan, null, tint = c.primary.let { if (c.dark) it else c.auroraA }, modifier = Modifier.size(56.dp))
-                Spacer(Modifier.height(10.dp))
-                Text("Scan to pay", style = ZType.title, color = c.text)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            SectionHeader("Pay someone")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                QuickAction("Phone number", ZIcon.Phone, { vm.go(Screen.PayTo("mobile")) }, Modifier.weight(1f))
+                QuickAction("UPI ID", ZIcon.At, { vm.go(Screen.PayTo("upi")) }, Modifier.weight(1f))
+                QuickAction("Bank account", ZIcon.Bank, { vm.go(Screen.PayTo("bank")) }, Modifier.weight(1f))
+                QuickAction("Balance", ZIcon.Wallet, { vm.go(Screen.Info(`in`.zeppay.zeppay.ussd.Op.BALANCE)) }, Modifier.weight(1f))
             }
-        }
-        Fine("Any UPI QR. No internet needed.", Modifier.fillMaxWidth(), align = androidx.compose.ui.text.style.TextAlign.Center)
-        Kicker("Pay someone", Modifier.padding(top = 6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Tile("Phone number", ZIcon.Phone, c.bubbleA, { vm.go(Screen.PayTo("mobile")) }, Modifier.weight(1f))
-            Tile("UPI ID", ZIcon.At, c.bubbleB, { vm.go(Screen.PayTo("upi")) }, Modifier.weight(1f))
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Tile("Bank account", ZIcon.Bank, c.bubbleC, { vm.go(Screen.PayTo("bank")) }, Modifier.weight(1f))
-            Tile("Balance", ZIcon.Wallet, c.bubbleD, { vm.go(Screen.Info(`in`.zeppay.zeppay.ussd.Op.BALANCE)) }, Modifier.weight(1f))
-        }
+            if (profile.hasVpa) TileRow("Receive money", profile.vpa, ZIcon.Qr, { vm.go(Screen.Receive) })
+            else TileRow("Receive money", "Add your UPI ID to show your QR", ZIcon.Qr, { vm.go(Screen.Profile(thenReceive = true)) })
 
-        if (route == Route.MANUAL) Panel {
-            Text("Let ZepPay fill in *99# for you", style = ZType.bodyBold, color = c.text)
-            Fine("Without the ZepPay helper you type each step in the dialer yourself. Your PIN always stays with your bank.")
+            if (route == Route.MANUAL) Panel {
+                Text("Let ZepPay fill in *99# for you", style = ZType.bodyBold, color = c.text)
+                Fine("Without the ZepPay helper you type each step in the dialer yourself. Your PIN always stays with your bank.")
+                Spacer(Modifier.height(12.dp))
+                ActionButton("Turn on helper", { vm.go(Screen.Helper) }, Modifier.fillMaxWidth(), icon = ZIcon.Accessibility)
+            }
+            (update as? UpdateState.Available)?.let { u ->
+                TileRow("Update ready", "ZepPay ${u.r.versionName}: see what's new", ZIcon.Update, { vm.go(Screen.Update) }, highlight = true)
+            }
+            if (history.isNotEmpty()) {
+                SectionHeader("Recent", action = "See all", onAction = { vm.go(Screen.Activity) })
+                Panel(pad = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 6.dp)) {
+                    history.take(3).forEachIndexed { i, t ->
+                        if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+                        TxRow(t) { vm.go(Screen.Receipt(t.id)) }
+                    }
+                }
+            }
+            TileRow("New to *99#?", "Link your bank once, step by step", ZIcon.Shield, { vm.go(Screen.BankSetup) })
+            Fine("UPI is a trademark of NPCI. ZepPay is an independent app, not a bank or payment service. Your bank completes every payment.")
             Spacer(Modifier.height(12.dp))
-            ActionButton("Turn on helper", { vm.go(Screen.Helper) }, Modifier.fillMaxWidth(), icon = ZIcon.Accessibility)
         }
-        (update as? UpdateState.Available)?.let { u ->
-            TileRow("Update ready", "ZepPay ${u.r.versionName}: see what's new", ZIcon.Update, { vm.go(Screen.Update) }, bubble = c.bubbleA)
-        }
-        if (history.isNotEmpty()) Panel(pad = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 18.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Kicker("Recent", Modifier.weight(1f))
-                Text("See all", style = ZType.bodyBold, color = c.auroraA, modifier = Modifier.clip(Shapes.pill).pressable(label = "See all activity") { vm.go(Screen.Activity) }.padding(horizontal = 12.dp, vertical = 8.dp))
-            }
-            history.take(3).forEachIndexed { i, t ->
-                if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
-                TxRow(t) { vm.go(Screen.Receipt(t.id)) }
-            }
-        }
-        TileRow("New to *99#?", "Link your bank once, step by step", ZIcon.Shield, { vm.go(Screen.BankSetup) }, bubble = c.bubbleC)
-        Fine("UPI is a trademark of NPCI. ZepPay is an independent app, not a bank or payment service. Your bank completes every payment.")
-        Spacer(Modifier.height(12.dp))
     }
 }
 

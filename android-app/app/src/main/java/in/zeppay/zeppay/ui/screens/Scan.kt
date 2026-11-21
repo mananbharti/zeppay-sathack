@@ -71,19 +71,19 @@ fun ScanScreen(vm: ZepViewModel) {
         if (text == null || !use(text)) vm.showToast("No UPI QR found in that picture")
     }
 
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    Box(Modifier.fillMaxSize().background(c.camera)) {
         if (permitted) CameraPreview(onControl = { control = it }, onError = { camErr = it }, onFound = { use(it) }, onBad = { vm.showToast("That QR isn't a UPI payment QR") })
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 RoundIcon(ZIcon.Close, "Close") { vm.back() }
-                Text("Scan to pay", style = ZType.title, color = Color.White, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
+                Text("Scan to pay", style = ZType.title, color = c.onCamera, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
                 RoundIcon(ZIcon.Torch, if (torch) "Torch off" else "Torch on", on = torch) {
                     val cc = control
                     if (cc == null) vm.showToast("Torch isn't available") else { torch = !torch; cc.enableTorch(torch) }
                 }
             }
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                // Viewfinder: four lime corner brackets. The only thing that moves here is the camera.
+                // Viewfinder: four blue corner brackets. The only thing that moves here is the camera.
                 Canvas(Modifier.size(260.dp)) {
                     val l = 54.dp.toPx(); val w = 9.dp.toPx(); val s = size.width
                     listOf(Offset(0f, 0f) to Offset(1f, 1f), Offset(s, 0f) to Offset(-1f, 1f), Offset(0f, s) to Offset(1f, -1f), Offset(s, s) to Offset(-1f, -1f)).forEach { (o, d) ->
@@ -110,8 +110,8 @@ fun ScanScreen(vm: ZepViewModel) {
 @Composable
 private fun RoundIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, on: Boolean = false, onClick: () -> Unit) {
     val c = Zep.c
-    Box(Modifier.size(56.dp).clip(CircleShape).background(if (on) c.primary else Color.Black.copy(alpha = 0.55f)).pressable(label = label, onClick = onClick), contentAlignment = Alignment.Center) {
-        Icon(icon, label, tint = if (on) c.onPrimary else Color.White, modifier = Modifier.size(26.dp))
+    Box(Modifier.size(56.dp).clip(CircleShape).background(if (on) c.primary else c.camera.copy(alpha = 0.55f)).pressable(label = label, onClick = onClick), contentAlignment = Alignment.Center) {
+        Icon(icon, label, tint = if (on) c.onPrimary else c.onCamera, modifier = Modifier.size(26.dp))
     }
     Spacer(Modifier.width(0.dp))
 }

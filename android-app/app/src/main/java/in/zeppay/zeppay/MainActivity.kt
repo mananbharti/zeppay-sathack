@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -92,6 +93,41 @@ class ZepViewModel(app: Application) : AndroidViewModel(app) {
     val sims = MutableStateFlow<List<Sim>>(emptyList())
     val simSubId = MutableStateFlow(store.simSubId)
     val carrierOverride = MutableStateFlow(store.carrierOverride)
+    /** The user's own name, UPI ID and photo stamp (on this phone only). */
+    val profile = MutableStateFlow(store.profile)
+    /** The decoded profile photo, or null. Loaded off the main thread. */
+    val photo = MutableStateFlow<androidx.compose.ui.graphics.ImageBitmap?>(null)
+
+    init { loadPhoto() }
+
+    private fun loadPhoto() {
+        if (store.profilePhoto.isEmpty()) { photo.value = null; return }
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            photo.value = `in`.zeppay.zeppay.data.ProfilePhoto.load(ctx)?.asImageBitmap()
+        }
+    }
+
+    fun saveProfile(name: String, vpa: String) {
+        val p = profile.value.copy(name = name.trim(), vpa = vpa.trim())
+        store.profile = p; profile.value = p
+    }
+
+    /** Copies the picked photo into private storage, then shows it. */
+    fun setPhoto(uri: android.net.Uri) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val ver = `in`.zeppay.zeppay.data.ProfilePhoto.save(ctx, uri)
+            if (ver == null) { showToast("Couldn't read that photo"); return@launch }
+            store.profilePhoto = ver
+            profile.value = profile.value.copy(photo = ver)
+            loadPhoto()
+        }
+    }
+
+    fun removePhoto() {
+        `in`.zeppay.zeppay.data.ProfilePhoto.delete(ctx)
+        store.profilePhoto = ""; profile.value = profile.value.copy(photo = ""); photo.value = null
+    }
+
     /** A payment handed to the dialer / IVR that the user still has to tell us about. */
     val awaitingUser = MutableStateFlow<Tx?>(null)
 
@@ -232,6 +268,14 @@ fun Root(vm: ZepViewModel) {
     val tab by vm.tab.collectAsState()
     val toast by vm.toast.collectAsState()
     val c = Zep.c
+    // Status/nav bar icons follow ZepPay's own theme (not the system's); the camera is always dark.
+    val view = androidx.compose.ui.platform.LocalView.current
+    val lightBars = !c.dark && stack.lastOrNull() !is Screen.Scan
+    androidx.compose.runtime.SideEffect {
+        (view.context as? android.app.Activity)?.window?.let { w ->
+            androidx.core.view.WindowCompat.getInsetsController(w, view).apply { isAppearanceLightStatusBars = lightBars; isAppearanceLightNavigationBars = lightBars }
+        }
+    }
     Box(Modifier.fillMaxSize().background(c.bg).imePadding()) {
         if (!onboarded) { OnboardingFlow(vm); return@Box }
         BackHandler(enabled = stack.isNotEmpty()) { vm.back() }
@@ -248,7 +292,7 @@ fun Root(vm: ZepViewModel) {
         ) { s ->
             if (s == null) Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f)) { TabHost(vm, tab) }
-                Dock(tab) { vm.setTab(it) }
+                Dock(tab, { vm.setTab(it) }, { vm.go(Screen.Scan) })
             } else ScreenHost(vm, s)
         }
         ToastHost(toast, Modifier.align(Alignment.BottomCenter))

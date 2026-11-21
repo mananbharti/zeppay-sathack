@@ -116,6 +116,15 @@ class Store(private val context: Context) {
         get() = prefs.getStringSet("askedPermissions", emptySet())?.toSet() ?: emptySet()
         set(v) = prefs.edit().putStringSet("askedPermissions", v).apply()
 
+    // Profile (added in 2.2): NEW keys only. The photo itself is a file in the app's private
+    // storage (ProfilePhoto); "profilePhoto" holds its version stamp, "" = no photo.
+    var profileName: String get() = str("profileName", ""); set(v) = put("profileName", v)
+    var profileVpa: String get() = str("profileVpa", ""); set(v) = put("profileVpa", v)
+    var profilePhoto: String get() = str("profilePhoto", ""); set(v) = put("profilePhoto", v)
+    var profile: Profile
+        get() = Profile(profileName, profileVpa, profilePhoto)
+        set(v) { prefs.edit().putString("profileName", v.name).putString("profileVpa", v.vpa).putString("profilePhoto", v.photo).apply() }
+
     var menuScan: MenuScan?
         get() = try { MenuScan.fromJson(prefs.getString("menuScan", null)?.let { JSONObject(it) }) } catch (_: Exception) { null }
         set(v) = put("menuScan", v?.toJson()?.toString() ?: "")

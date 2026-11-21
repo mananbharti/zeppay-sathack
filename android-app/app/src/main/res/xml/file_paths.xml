@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the Receive QR picture, written to cache/share/ when you tap Share. -->
+<paths>
+    <cache-path name="share" path="share/" />
+</paths>

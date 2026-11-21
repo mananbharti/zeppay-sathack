@@ -76,7 +76,7 @@ fun SplitsTab(vm: ZepViewModel) {
             val owe = mine.filter { it.from == ME }.sumOf { it.amount }
             val owed = mine.filter { it.to == ME }.sumOf { it.amount }
             TileRow(g.name, when { owe > 0 -> "You owe ${money(owe)}"; owed > 0 -> "You're owed ${money(owed)}"; else -> "All settled" },
-                if (g.duo) ZIcon.Contacts else ZIcon.Split, { vm.go(Screen.GroupView(g.id)) }, bubble = if (owe > 0) c.failed else if (owed > 0) c.primary else c.paid)
+                if (g.duo) ZIcon.Contacts else ZIcon.Split, { vm.go(Screen.GroupView(g.id)) }, highlight = owe > 0)
         }
         Panel(color = c.card) {
             Text("Saved on this phone only", style = ZType.bodyBold, color = c.text)
