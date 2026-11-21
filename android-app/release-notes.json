@@ -1,0 +1,1 @@
+["Fixed: after a payment, ZepPay again reads your bank's reply itself instead of asking whether your bank SMS came", "Scans more QR codes, including Google Pay and bank merchant QRs (BharatQR), and shows the payee's name", "Hindi and other non-English payee names now show correctly"]
