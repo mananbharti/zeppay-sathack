@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -59,6 +60,9 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -92,7 +96,7 @@ fun Modifier.pressable(enabled: Boolean = true, role: Role = Role.Button, label:
     return this.scale(s).clickable(src, null, enabled, label, role, onClick)
 }
 
-/** The one next step. Mint pill. */
+/** The one next step. Blue pill. */
 @Composable
 fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true) {
     val c = Zep.c
@@ -107,7 +111,7 @@ fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
     }
 }
 
-/** Any other choice. Navy pill. [tint] recolours the label (e.g. a destructive choice). */
+/** Any other choice. Quiet pill. [tint] recolours the label (e.g. a destructive choice). */
 @Composable
 fun PlainButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, tint: Color? = null) {
     val c = Zep.c
@@ -121,36 +125,38 @@ fun PlainButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
     }
 }
 
+/** Round icon well: light-blue disc, blue icon. [strong] = the blue action colour, for something that needs attention. */
 @Composable
-private fun Bubble(icon: ImageVector, color: Color, size: Dp = 52.dp) {
+fun IconWell(icon: ImageVector, size: Dp = 52.dp, strong: Boolean = false) {
     val c = Zep.c
-    Box(Modifier.size(size).clip(CircleShape).background(color), contentAlignment = Alignment.Center) {
-        Icon(icon, null, tint = c.onBubble, modifier = Modifier.size(size * 0.48f))
+    Box(Modifier.size(size).clip(CircleShape).background(if (strong) c.primary else c.iconBg), contentAlignment = Alignment.Center) {
+        Icon(icon, null, tint = if (strong) c.onPrimary else c.iconFg, modifier = Modifier.size(size * 0.46f))
     }
 }
 
-/** Shortcut tile: borderless, coloured icon bubble, big label. With large system text the bubble sits above the label so words never break. */
+/** Home shortcut: a 64dp round well with its label underneath. The whole column is the target. */
 @Composable
-fun Tile(label: String, icon: ImageVector, bubble: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun QuickAction(label: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val c = Zep.c
-    val stacked = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.15f
-    val base = modifier.heightIn(min = if (stacked) 120.dp else 84.dp).clip(Shapes.tile).background(c.tile)
-        .then(if (!c.dark) Modifier.border(1.dp, c.line, Shapes.tile) else Modifier).pressable(label = label, onClick = onClick).padding(14.dp)
-    val text = @Composable { Text(label, style = ZType.label.copy(fontSize = 19.sp, lineHeight = 22.sp), color = c.text) }
-    if (stacked) Column(base, verticalArrangement = Arrangement.spacedBy(10.dp)) { Bubble(icon, bubble, 46.dp); text() }
-    else Row(base, verticalAlignment = Alignment.CenterVertically) { Bubble(icon, bubble, 50.dp); Spacer(Modifier.width(12.dp)); text() }
+    Column(
+        modifier.clip(Shapes.tile).pressable(label = label, onClick = onClick).padding(vertical = 6.dp, horizontal = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        IconWell(icon, 64.dp)
+        Text(label, style = ZType.bodyBold.copy(fontSize = 16.sp, lineHeight = 19.sp), color = c.text, textAlign = TextAlign.Center, maxLines = 2)
+    }
 }
 
-/** Full-width shortcut row (settings, secondary actions). */
+/** Full-width shortcut row (settings, secondary actions). [highlight] fills the icon well blue: this row needs you. */
 @Composable
-fun TileRow(title: String, sub: String? = null, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier, bubble: Color? = null, trailing: (@Composable () -> Unit)? = null) {
+fun TileRow(title: String, sub: String? = null, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier, highlight: Boolean = false, trailing: (@Composable () -> Unit)? = null) {
     val c = Zep.c
     Row(
-        modifier.fillMaxWidth().heightIn(min = 80.dp).clip(Shapes.tile).background(c.tile).then(if (!c.dark) Modifier.border(1.dp, c.line, Shapes.tile) else Modifier)
+        modifier.fillMaxWidth().heightIn(min = 76.dp).clip(Shapes.tile).background(c.tile).border(1.dp, c.line, Shapes.tile)
             .pressable(label = title, onClick = onClick).padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Bubble(icon, bubble ?: c.secondary.let { if (c.dark) Color(0xFF243150) else it }, 48.dp)
+        IconWell(icon, 48.dp, strong = highlight)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = ZType.label, color = c.text)
@@ -160,11 +166,32 @@ fun TileRow(title: String, sub: String? = null, icon: ImageVector, onClick: () -
     }
 }
 
+/** Section title with an optional text action on the right ("See all"). */
+@Composable
+fun SectionHeader(title: String, modifier: Modifier = Modifier, action: String? = null, onAction: (() -> Unit)? = null) {
+    val c = Zep.c
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, style = ZType.title.copy(fontSize = 22.sp, lineHeight = 26.sp), color = c.text, modifier = Modifier.weight(1f).semantics { heading() })
+        if (action != null && onAction != null) TextAction(action, onAction)
+    }
+}
+
+/** A text-only action ("See all", "Copy"): link colour, 48dp+ target. */
+@Composable
+fun TextAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null) {
+    val c = Zep.c
+    Row(modifier.heightIn(min = 48.dp).clip(Shapes.pill).pressable(label = text, onClick = onClick).padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(text, style = ZType.bodyBold, color = c.link)
+        Spacer(Modifier.width(6.dp))
+        Icon(icon ?: ZIcon.Arrow, null, tint = c.link, modifier = Modifier.size(20.dp))
+    }
+}
+
 /** Grouped information. Card, not tappable. */
 @Composable
 fun Panel(modifier: Modifier = Modifier, color: Color? = null, pad: PaddingValues = PaddingValues(20.dp), content: @Composable ColumnScope.() -> Unit) {
     val c = Zep.c
-    Column(modifier.clip(Shapes.card).background(color ?: c.card).then(if (!c.dark && color == null) Modifier.border(1.dp, c.line, Shapes.card) else Modifier).padding(pad), content = content)
+    Column(modifier.clip(Shapes.card).background(color ?: c.card).then(if (color == null) Modifier.border(1.dp, c.line, Shapes.card) else Modifier).padding(pad), content = content)
 }
 
 /** A payment's details: card with a hairline between "what" and "how". Tappable if [onClick]. */
@@ -172,7 +199,7 @@ fun Panel(modifier: Modifier = Modifier, color: Color? = null, pad: PaddingValue
 fun PayCard(modifier: Modifier = Modifier, color: Color? = null, onClick: (() -> Unit)? = null, top: @Composable ColumnScope.() -> Unit, bottom: (@Composable ColumnScope.() -> Unit)? = null) {
     val c = Zep.c
     Column(
-        modifier.clip(Shapes.card).background(color ?: c.card).then(if (!c.dark) Modifier.border(1.dp, c.line, Shapes.card) else Modifier)
+        modifier.clip(Shapes.card).background(color ?: c.card).then(if (color == null) Modifier.border(1.dp, c.line, Shapes.card) else Modifier)
             .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier),
     ) {
         Column(Modifier.padding(start = 22.dp, end = 22.dp, top = 20.dp, bottom = if (bottom != null) 16.dp else 20.dp), content = top)
@@ -183,22 +210,60 @@ fun PayCard(modifier: Modifier = Modifier, color: Color? = null, onClick: (() ->
     }
 }
 
-/** The aurora: soft teal and violet light. Used ONLY behind the signal dial. Radial gradients, so it works on every Android version. */
+/**
+ * The hero band behind Home's scan card: a blue wash fading into the page, a fine dot grid
+ * and one soft cyan glow. Decoration only, drawn in code (no images).
+ */
 @Composable
-fun BoxScope.Aurora(strength: Float = 1f) {
+fun BoxScope.HeroBand() {
     val c = Zep.c
     Canvas(Modifier.matchParentSize()) {
-        val a = (if (c.dark) 0.5f else 0.32f) * strength
-        val r = size.minDimension * 0.62f
-        fun blob(col: Color, at: Offset) = drawCircle(Brush.radialGradient(listOf(col.copy(alpha = a), col.copy(alpha = 0f)), at, r), r, at)
-        blob(c.auroraA, Offset(size.width * 0.18f, size.height * 0.45f))
-        blob(c.auroraB, Offset(size.width * 0.84f, size.height * 0.5f))
+        val top = if (c.dark) 0.55f else 0.30f
+        drawRect(Brush.verticalGradient(0f to c.glowA.copy(alpha = top), 0.75f to c.glowA.copy(alpha = 0f)))
+        val step = 14.dp.toPx(); val r = 1.2.dp.toPx()
+        var y = step / 2
+        while (y < size.height) {
+            val a = (1f - y / size.height).coerceIn(0f, 1f) * (if (c.dark) 0.28f else 0.22f)
+            var x = step / 2
+            while (x < size.width) { drawCircle(c.glowB.copy(alpha = a), r, Offset(x, y)); x += step }
+            y += step
+        }
+        val at = Offset(size.width / 2, size.height * 0.52f); val gr = size.minDimension * 0.55f
+        drawCircle(Brush.radialGradient(listOf(c.glowB.copy(alpha = if (c.dark) 0.35f else 0.25f), c.glowB.copy(alpha = 0f)), at, gr), gr, at)
+    }
+}
+
+/** The one hero object on Home: a rounded square with a blue gradient edge and big scan corners. Tap to scan. */
+@Composable
+fun ScanCard(title: String, sub: String, onClick: () -> Unit, modifier: Modifier = Modifier, size: Dp = 240.dp) {
+    val c = Zep.c
+    val edge = Brush.linearGradient(listOf(c.glowB, c.glowA, c.primary))
+    Column(
+        modifier.size(size).clip(Shapes.hero).background(edge).padding(3.dp).clip(Shapes.hero).background(c.card)
+            .pressable(label = title, onClick = onClick).padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
+    ) {
+        Canvas(Modifier.size(size * 0.36f)) {
+            val w = this.size.width; val k = w * 0.3f; val st = 5.dp.toPx()
+            val col = c.primary
+            fun corner(x: Float, y: Float, dx: Float, dy: Float) {
+                drawLine(col, Offset(x, y), Offset(x + dx * k, y), st, StrokeCap.Round)
+                drawLine(col, Offset(x, y), Offset(x, y + dy * k), st, StrokeCap.Round)
+            }
+            val i = st / 2
+            corner(i, i, 1f, 1f); corner(w - i, i, -1f, 1f); corner(i, w - i, 1f, -1f); corner(w - i, w - i, -1f, -1f)
+            drawLine(c.glowB, Offset(w * 0.22f, w / 2), Offset(w * 0.78f, w / 2), st, StrokeCap.Round)
+        }
+        Spacer(Modifier.height(16.dp))
+        Text(title, style = ZType.title, color = c.text, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(4.dp))
+        Text(sub, style = ZType.small, color = c.muted, textAlign = TextAlign.Center)
     }
 }
 
 /**
- * The signal dial: a disc with three gradient rings. It's the scan button on Home and the
- * live-payment indicator. Rings ripple outward ONLY when [working].
+ * The signal rings: a disc with three blue gradient rings. The live-payment indicator.
+ * Rings ripple outward ONLY when [working].
  */
 @Composable
 fun SignalDial(modifier: Modifier = Modifier, size: Dp = 236.dp, working: Boolean = false, onClick: (() -> Unit)? = null, label: String = "", content: @Composable ColumnScope.() -> Unit) {
@@ -206,7 +271,7 @@ fun SignalDial(modifier: Modifier = Modifier, size: Dp = 236.dp, working: Boolea
     val reduce = Zep.reduceMotion
     val t = rememberInfiniteTransition(label = "dial")
     val p by t.animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Restart), label = "p")
-    val ring = Brush.sweepGradient(listOf(c.auroraA, c.auroraB, c.auroraA))
+    val ring = Brush.sweepGradient(listOf(c.glowA, c.glowB, c.glowA))
     Box(modifier.size(size), contentAlignment = Alignment.Center) {
         Canvas(Modifier.matchParentSize()) {
             val r = this.size.minDimension / 2
@@ -217,7 +282,7 @@ fun SignalDial(modifier: Modifier = Modifier, size: Dp = 236.dp, working: Boolea
             }
         }
         Column(
-            Modifier.size(size - 46.dp).clip(CircleShape).background(if (c.dark) Color(0xFF0A1222) else c.card)
+            Modifier.size(size - 46.dp).clip(CircleShape).background(c.card)
                 .then(if (onClick != null) Modifier.pressable(label = label, onClick = onClick) else Modifier.semantics { contentDescription = label }),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, content = content,
         )
@@ -230,7 +295,7 @@ fun Working(modifier: Modifier = Modifier) {
     SignalDial(modifier, size = 56.dp, working = true, label = "Working") {}
 }
 
-/** The bank's counter. Dashed sky frame with its own label. Used wherever ZepPay steps aside. */
+/** The bank's counter. Dashed cyan frame with its own label. Used wherever ZepPay steps aside. */
 @Composable
 fun BankCounter(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val c = Zep.c
@@ -247,10 +312,14 @@ fun BankCounter(modifier: Modifier = Modifier, content: @Composable ColumnScope.
 }
 
 @Composable
-fun Avatar(name: String, size: Dp = 48.dp) {
+fun Avatar(name: String, size: Dp = 48.dp, photo: ImageBitmap? = null) {
     val c = Zep.c
-    Box(Modifier.size(size).clip(CircleShape).background(if (c.dark) Color(0xFF26324C) else c.secondary).semantics { contentDescription = name }, contentAlignment = Alignment.Center) {
-        Text(Lib.initials(name), style = ZType.label.copy(fontSize = (size.value * 0.36f).sp), color = c.text)
+    Box(Modifier.size(size).clip(CircleShape).background(c.raised).semantics { contentDescription = name.ifBlank { "No name yet" } }, contentAlignment = Alignment.Center) {
+        when {
+            photo != null -> Image(photo, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+            name.isBlank() -> Icon(ZIcon.Contacts, null, tint = c.iconFg, modifier = Modifier.size(size * 0.5f))
+            else -> Text(Lib.initials(name), style = ZType.label.copy(fontSize = (size.value * 0.36f).sp), color = c.text)
+        }
     }
 }
 
@@ -338,7 +407,7 @@ fun Field(
         Spacer(Modifier.height(6.dp))
         val style = if (big) ZType.title.copy(color = c.text) else ZType.body.copy(fontSize = 21.sp, color = c.text)
         BasicTextField(
-            value, onChange, singleLine = true, textStyle = style, cursorBrush = SolidColor(c.auroraA),
+            value, onChange, singleLine = true, textStyle = style, cursorBrush = SolidColor(c.primary),
             keyboardOptions = KeyboardOptions(capitalization = caps, autoCorrectEnabled = false, keyboardType = keyboard, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onDone?.invoke() }),
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },
@@ -377,7 +446,7 @@ fun ToastHost(msg: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** A choice among several. Selected = mint. */
+/** A choice among several. Selected = blue. */
 @Composable
 fun Chip(text: String, on: Boolean, onClick: () -> Unit) {
     val c = Zep.c
