@@ -16,6 +16,11 @@
 <img src="docs/screenshots/09-spends.png" width="180">
 <img src="docs/screenshots/01-home-daylight.png" width="180">
 </p>
+<p>
+<img src="docs/screenshots/12-profile.png" width="180">
+<img src="docs/screenshots/13-receive.png" width="180">
+<img src="docs/screenshots/14-more-daylight.png" width="180">
+</p>
 
 Real emulator screenshots of this build. Design contract: [docs/DESIGN.md](docs/DESIGN.md).
 
@@ -36,6 +41,8 @@ Real emulator screenshots of this build. Design contract: [docs/DESIGN.md](docs/
 - **Keeps going when you leave ZepPay:** a running `*99#` session lives outside ZepPay's screen, with a status notification and a Cancel button. See [Leaving ZepPay during a payment](#leaving-zeppay-during-a-payment)
 - **Offline bank + IFSC finder** for paying a bank account: pick the bank, then the branch or town, and the IFSC is filled in (you can still edit it). See [Bank and IFSC list](#bank-and-ifsc-list)
 - **In-app updates:** check, download, verify, install. See below
+- **Profile:** your name, a photo (system photo picker; the picture is copied into ZepPay's private storage) and your own UPI ID, checked for the `name@bank` shape. On this phone only
+- **Receive:** your UPI ID as a real QR (`upi://pay?pa=…&pn=…`, optional amount and note) that any UPI app can scan; share it or save it as a picture. ZepPay can't see money arriving, so it never says "received": only your bank's SMS, app or statement confirms that
 
 ## The PIN rule
 
@@ -126,7 +133,7 @@ The finder only fills in the IFSC field. It never links, checks or verifies anyo
 | Internet + network state | Update checks and downloads only. Payments never use the internet |
 | Install packages | Install ZepPay's own verified updates |
 
-No SMS access, no location, no contacts permission.
+No SMS access, no location, no contacts permission, no storage permission (the profile photo comes through the system photo picker and the Receive QR is saved through the system "save as" screen).
 
 ## Build
 

@@ -1,6 +1,9 @@
 package `in`.zeppay.zeppay.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
@@ -54,6 +57,10 @@ sealed interface Screen {
     data object Licenses : Screen
     /** The setup walkthrough; [only] = one step id on its own (just in time). */
     data class Setup(val only: String? = null) : Screen
+    /** Your name, photo and UPI ID. [thenReceive] = opened from Receive without a UPI ID: go on to the QR after saving. */
+    data class Profile(val thenReceive: Boolean = false) : Screen
+    /** Your UPI ID as a QR others can scan to pay you. */
+    data object Receive : Screen
 }
 
 @Composable
@@ -77,6 +84,8 @@ fun ScreenHost(vm: ZepViewModel, s: Screen) = when (s) {
     is Screen.NewSplit -> NewSplitScreen(vm, s.duo)
     is Screen.AddExpense -> AddExpenseScreen(vm, s.gid)
     Screen.Licenses -> LicensesScreen(vm)
+    is Screen.Profile -> ProfileScreen(vm, s.thenReceive)
+    Screen.Receive -> ReceiveScreen(vm)
     is Screen.Setup -> SetupWalkthrough(vm, s.only?.let { `in`.zeppay.zeppay.data.SetupStep.byId(it) }, { vm.back() }) {
         if (s.only == null) vm.showToast("Setup is done")
         vm.back()
@@ -91,27 +100,37 @@ fun TabHost(vm: ZepViewModel, tab: String) = when (tab) {
     else -> PayTab(vm)
 }
 
-/** The dock: a floating navy pill. The current tab becomes a mint pill; labels always show. */
+/**
+ * The dock: a floating pill with the four tabs (labels always show; the current one sits in a
+ * light-blue well), and a round blue Scan button beside it so scanning is one tap from any tab.
+ */
 @Composable
-fun Dock(tab: String, onTab: (String) -> Unit) {
+fun Dock(tab: String, onTab: (String) -> Unit, onScan: () -> Unit) {
     val c = Zep.c
-    val items = listOf(Triple("pay", "Pay", ZIcon.Scan), Triple("split", "Split", ZIcon.Contacts), Triple("spends", "Spends", ZIcon.Chart), Triple("more", "More", ZIcon.More))
+    val items = listOf(Triple("pay", "Pay", ZIcon.Home), Triple("split", "Split", ZIcon.Contacts), Triple("spends", "Spends", ZIcon.Chart), Triple("more", "More", ZIcon.More))
     Row(
-        Modifier.fillMaxWidth().background(c.bg).navigationBarsPadding().padding(horizontal = 14.dp, vertical = 10.dp)
-            .clip(Shapes.pill).background(c.card).padding(6.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically,
+        Modifier.fillMaxWidth().background(c.bg).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
-        items.forEach { (id, label, icon) ->
-            val on = id == tab
-            val fg = if (on) c.onPrimary else c.muted
-            Column(
-                Modifier.weight(1f).heightIn(min = 62.dp).clip(Shapes.pill).background(if (on) c.primary else Color.Transparent)
-                    .semantics { selected = on }.pressable(role = Role.Tab, label = label) { onTab(id) }.padding(vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
-            ) {
-                Icon(icon, null, tint = fg, modifier = Modifier.size(24.dp))
-                Text(label, style = ZType.bodyBold.copy(fontSize = 15.sp, lineHeight = 18.sp), color = fg, maxLines = 1)
+        Row(
+            Modifier.weight(1f).clip(Shapes.pill).background(c.card).border(1.dp, c.line, Shapes.pill).padding(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items.forEach { (id, label, icon) ->
+                val on = id == tab
+                val fg = if (on) c.iconFg else c.muted
+                Column(
+                    Modifier.weight(1f).heightIn(min = 60.dp).clip(Shapes.pill).background(if (on) c.iconBg else Color.Transparent)
+                        .semantics { selected = on }.pressable(role = Role.Tab, label = label) { onTab(id) }.padding(vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(icon, null, tint = fg, modifier = Modifier.size(24.dp))
+                    Text(label, style = ZType.bodyBold.copy(fontSize = 15.sp, lineHeight = 18.sp), color = if (on) c.text else c.muted, maxLines = 1)
+                }
             }
+        }
+        Box(Modifier.size(68.dp).clip(CircleShape).background(c.primary).pressable(label = "Scan a QR to pay", onClick = onScan), contentAlignment = Alignment.Center) {
+            Icon(ZIcon.Scan, null, tint = c.onPrimary, modifier = Modifier.size(30.dp))
         }
     }
 }

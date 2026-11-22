@@ -15,6 +15,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import `in`.zeppay.zeppay.ui.theme.Shapes
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,12 +67,13 @@ fun MoreTab(vm: ZepViewModel) {
     val update by Updater.state.collectAsState()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("More", style = ZType.hero, color = c.text)
+        ProfileCard(vm)
         TileRow("Settings", "SIM, look, 123PAY", ZIcon.Gear, { vm.go(Screen.Settings) })
-        TileRow("ZepPay helper", if (helperOn()) "On: fills in *99# for you" else "Off: tap to set up", ZIcon.Accessibility, { vm.go(Screen.Helper) }, bubble = if (helperOn()) null else c.bubbleB)
+        TileRow("ZepPay helper", if (helperOn()) "On: fills in *99# for you" else "Off: tap to set up", ZIcon.Accessibility, { vm.go(Screen.Helper) }, highlight = !helperOn())
         TileRow("Link my bank", "First-time *99# setup", ZIcon.Shield, { vm.go(Screen.BankSetup) })
         TileRow("Check my SIM's menu", "See what *99# offers on your SIM", ZIcon.Sim, { vm.go(Screen.MenuCheck) })
         TileRow("Bank history", "*99# statement, if your SIM has it", ZIcon.List, { vm.go(Screen.Info(Op.HISTORY)) })
-        TileRow("Updates", if (update is UpdateState.Available) "New version ready" else "Version ${BuildConfig.VERSION_NAME}", ZIcon.Update, { vm.go(Screen.Update) }, bubble = if (update is UpdateState.Available) c.bubbleA else null)
+        TileRow("Updates", if (update is UpdateState.Available) "New version ready" else "Version ${BuildConfig.VERSION_NAME}", ZIcon.Update, { vm.go(Screen.Update) }, highlight = update is UpdateState.Available)
         TileRow("Help", "How ZepPay works, limits, privacy", ZIcon.Help, { vm.go(Screen.Help) })
         TileRow("Licences", null, ZIcon.List, { vm.go(Screen.Licenses) })
     }
@@ -105,7 +111,7 @@ fun SettingsScreen(vm: ZepViewModel) {
         }
         Kicker("Look")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            listOf("auto" to "Auto", "light" to "Whitewash", "dark" to "Teal wall").forEach { (k, l) -> Chip(l, theme == k) { vm.setTheme(k) } }
+            listOf("auto" to "Auto", "light" to "Daylight", "dark" to "Night").forEach { (k, l) -> Chip(l, theme == k) { vm.setTheme(k) } }
         }
         Kicker("While paying")
         Toggle("Progress card over the bank's screen", "Optional. A small card above the *99# screen shows what ZepPay is doing. The notification shows the same, with Cancel.", card) {
@@ -327,5 +333,29 @@ fun LicensesScreen(vm: ZepViewModel) {
             Body("Bank and IFSC list: ${d.source} (${d.sourceUrl}), release ${d.release}, RBI list of ${d.rbiDate}, ${d.branches} branches. ${d.licence}.")
         }
         Body("UPI is a trademark of NPCI. ZepPay isn't affiliated with NPCI or any bank.")
+    }
+}
+
+/** Who you are on this phone: photo, name, UPI ID. Opens Profile; "Show my QR" opens Receive. */
+@Composable
+private fun ProfileCard(vm: ZepViewModel) {
+    val c = Zep.c
+    val profile by vm.profile.collectAsState()
+    val photo by vm.photo.collectAsState()
+    Panel(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().clip(Shapes.tile).pressable(label = "Edit your profile") { vm.go(Screen.Profile()) }.padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Avatar(profile.name, 64.dp, photo)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(profile.name.ifBlank { "Add your name" }, style = ZType.label, color = c.text)
+                Text(profile.vpa.ifBlank { "No UPI ID yet" }, style = ZType.small, color = c.muted)
+            }
+            Icon(ZIcon.Edit, null, tint = c.muted, modifier = Modifier.size(24.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        ActionButton(if (profile.hasVpa) "Show my QR" else "Add your UPI ID", {
+            vm.go(if (profile.hasVpa) Screen.Receive else Screen.Profile(thenReceive = true))
+        }, Modifier.fillMaxWidth(), icon = ZIcon.Qr)
     }
 }

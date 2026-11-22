@@ -72,5 +72,14 @@
         <receiver android:name=".update.InstallStatusReceiver" android:exported="false" />
         <!-- The status notification's Cancel button. Not exported: only ZepPay's own PendingIntent reaches it. -->
         <receiver android:name=".notify.CancelReceiver" android:exported="false" />
+
+        <!-- Shares the Receive QR picture from ZepPay's cache (one file, read-only, on request). Not a permission. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

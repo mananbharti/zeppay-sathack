@@ -46,5 +46,10 @@ object ZIcon {
     val Call = icon("call", "M5 4h3.5l1.8 4.5-2.3 1.4a11 11 0 0 0 6.1 6.1l1.4-2.3 4.5 1.8V19a1.5 1.5 0 0 1-1.6 1.5C10.6 20 4 13.4 3.5 5.6A1.5 1.5 0 0 1 5 4z")
     val Signal = icon("signal", "M5 19v-3", "M10 19v-7", "M15 19V8", "M20 19V4", stroke = 3f)
     val Accessibility = icon("a11y", "M13.5 4.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z", "M5 8.5l7 1.5 7-1.5", "M12 10v4.5l-3 6", "M12 14.5l3 6")
+    val Home = icon("home", "M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z")
+    val Qr = icon("qr", "M4 4h6v6H4z", "M14 4h6v6h-6z", "M4 14h6v6H4z", "M14 14h2.5", "M20 14v2.5", "M14 18v2", "M17.5 17.5h.01", "M20 20h.01")
+    val Camera = icon("camera", "M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.5-2.2h5.6L16.3 7h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z", "M15.5 12.8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z")
+    val Save = icon("save", "M12 4v11", "M7.5 10.5 12 15l4.5-4.5", "M5 19.5h14")
+    val Edit = icon("edit", "M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z", "M13.5 6.5l4 4")
     val Layers = icon("layers", "M12 3 3 8l9 5 9-5z", "M3 13l9 5 9-5")
 }

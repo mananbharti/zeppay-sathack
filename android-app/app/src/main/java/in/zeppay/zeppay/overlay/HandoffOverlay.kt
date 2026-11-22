@@ -20,6 +20,7 @@ import android.view.WindowManager
 import android.view.animation.PathInterpolator
 import androidx.core.content.res.ResourcesCompat
 import `in`.zeppay.zeppay.R
+import `in`.zeppay.zeppay.ui.theme.ZepArgb
 import `in`.zeppay.zeppay.ussd.Phase
 
 /**
@@ -66,9 +67,9 @@ private class OverlayView(c: Context) : View(c) {
     private val d = resources.displayMetrics.density
     private val display: Typeface? = ResourcesCompat.getFont(c, R.font.bricolage)
     private val body: Typeface? = ResourcesCompat.getFont(c, R.font.atkinson)
-    private val ink = 0xFF070B14.toInt(); private val plum = 0xFF0F1626.toInt(); private val zap = 0xFF3EF0B1.toInt()
-    private val paper = 0xFFEEF2FA.toInt(); private val sky = 0xFF9CC9FF.toInt(); private val black = 0xFFEEF2FA.toInt()
-    private val frame = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 3f * resources.displayMetrics.density; color = 0xFF1E2940.toInt() }
+    private val ink = ZepArgb.bg; private val plum = ZepArgb.card; private val zap = ZepArgb.primary
+    private val paper = ZepArgb.text; private val sky = ZepArgb.bank; private val black = ZepArgb.text
+    private val frame = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 3f * resources.displayMetrics.density; color = ZepArgb.line }
 
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val dash = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2.5f * d; pathEffect = DashPathEffect(floatArrayOf(9 * d, 6 * d), 0f); color = sky }
@@ -117,7 +118,7 @@ private class OverlayView(c: Context) : View(c) {
     private fun layouts(w: Int): Pair<StaticLayout, StaticLayout> {
         val inner = (w - pad() * 2 - 56 * d * (1 - compact)).toInt().coerceAtLeast(10)
         title.color = if (compact > 0.5f) paper else black
-        text.color = 0xFF8E9AB4.toInt()
+        text.color = ZepArgb.muted
         fun mk(s: String, p: TextPaint) = StaticLayout.Builder.obtain(s, 0, s.length, p, inner).setAlignment(Layout.Alignment.ALIGN_NORMAL).setLineSpacing(0f, 1.1f).build()
         title.textSize = (21 - 3 * compact) * d
         return mk(headline(), title) to mk(sub(), text)
@@ -149,7 +150,7 @@ private class OverlayView(c: Context) : View(c) {
     private fun drawBars(c: Canvas, x: Float, y: Float, alpha: Float) {
         val lit = (bars * 3).toInt()
         for (i in 0 until 3) {
-            fill.color = if (i == lit) zap else 0xFF2A3A5C.toInt(); fill.alpha = (255 * alpha).toInt()
+            fill.color = if (i == lit) zap else ZepArgb.raised; fill.alpha = (255 * alpha).toInt()
             c.drawCircle(x + i * 13 * d, y + 14 * d, 5 * d, fill)
         }
         fill.alpha = 255
